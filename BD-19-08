@@ -1,0 +1,106 @@
+CREATE TABLE Funcionario (
+	ID serial primary key,
+	nome text, 
+	salario numeric (10,2)
+);
+
+CREATE TABLE Funcionario_log (
+	ID serial primary key,
+	id_funcionario int, 
+	novo_salario numeric (10,2), 
+	data_alteracao TIMESTAMPTZ NOT NULL DEFAULT now()
+); -- timestamptz inclui fuso horário
+
+CREATE TABLE Email_func (
+	nome text,
+	funcionario_id INT NOT NULL,
+	CONSTRAINT fk_funcionario
+        FOREIGN KEY (funcionario_id) 
+        REFERENCES Funcionario(id)
+)
+
+insert into Funcionario (nome, salario)
+values ('Saldanha', 1000)
+	  ,	('maria', 100000)
+	  , ('joao', 5000)
+	  
+insert into Funcionario (nome, salario)
+values ('jesus', 1000)
+
+/*insert into Email_func (email, funcionario_id)
+values ('algumacoisa@gmail.com', 1),
+	   ('sla@gmail.com', 2),
+	   ('nha@gmail.com', 3),
+	   ('opa@gmail.com', 4);
+*/
+
+SELECT * FROM Funcionario;
+SELECT * FROM Funcionario_log;
+SELECT * FROM Email_func;
+
+
+DROP FUNCTION IF EXISTS f_log_func();
+
+CREATE OR REPLACE FUNCTION f_log_func() 
+RETURNS TRIGGER AS $$ 
+BEGIN 
+  INSERT INTO Funcionario_log (id_funcionario, novo_salario, data_alteracao, antigo_salario) 
+  VALUES (NEW.id, NEW.salario, now(), OLD.salario); 
+  IF NEW.salario > OLD.salario * 2 THEN
+  RAISE EXCEPTION 'Funcionario não pode receber mais que o dobro de salario';
+  END IF;
+ RETURN OLD; 
+
+END; 
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION e_func()
+RETURNS TRIGGER AS $$
+BEGIN
+	INSERT INTO Email_func (nome, funcionario_id)
+	VALUES (NEW.nome, NEW.id);
+	RAISE NOTICE 'Novo funcionario foi adicionado';
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION d_funcfunc()
+RETURNS TRIGGER AS $$
+BEGIN
+	RAISE EXCEPTION 'Funcionario não pode ser deletado pois teve mudanca de salario';
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+	
+
+CREATE TRIGGER e_newfunc
+AFTER INSERT
+ON Funcionario
+FOR EACH ROW
+EXECUTE FUNCTION e_func();
+
+CREATE TRIGGER g_logfunc
+AFTER UPDATE
+ON Funcionario
+FOR EACH ROW
+WHEN (old.salario<>new.salario)
+EXECUTE FUNCTION f_log_func();
+
+CREATE TRIGGER d_func
+BEFORE DELETE
+ON Funcionario
+FOR EACH ROW
+WHEN (!funcionario_log.antigo_salario==new.salario)
+EXECUTE FUNCTION d_funcfunc();
+
+alter table funcionario_log add column antigo_salario numeric
+
+
+
+update Funcionario set salario = 12000 where id = 2;
+update Funcionario set salario = 30000 where id = 4;
+update funcionario set salario = 5000 where id = 1;
+
+select fl.id, f.nome, fl.novo_salario, fl.data_alteracao
+	from Funcionario_log fl
+inner join funcionario f on (f.id = fl.id_funcionario)
