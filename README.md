@@ -22,3 +22,5 @@ TG_RELID (OID da tabela que disparou o trigger)
 TG_TABLE_NAME (nome da tabela)
 TG_TABLE_SCHEMA ( nome do schema onde esta a tabela)
 TG_ARGV [] text [] (array com argumentos passados para o trigger na criação (CREATE TRIGGER... EXECUTE FUNCTION ... (arg1, arg2,...)
+
+evento = insert, delete, update...
