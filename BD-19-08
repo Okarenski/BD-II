@@ -104,3 +104,105 @@ update funcionario set salario = 5000 where id = 1;
 select fl.id, f.nome, fl.novo_salario, fl.data_alteracao
 	from Funcionario_log fl
 inner join funcionario f on (f.id = fl.id_funcionario)
+
+--aula 26/08
+
+CREATE OR REPLACE FUNCTION minha_trigger_func()
+RETURNS TRIGGER AS $$
+BEGIN
+  RAISE NOTICE 'Operação: %', TG_OP;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER trg_tg_op
+AFTER INSERT OR UPDATE OR DELETE
+ON funcionario
+FOR EACH ROW
+EXECUTE FUNCTION minha_trigger_func();
+
+
+CREATE OR REPLACE FUNCTION minha_trigger_func()
+RETURNS TRIGGER AS $$
+BEGIN
+  CASE TG_OP
+    WHEN 'INSERT' THEN
+      RAISE NOTICE 'Operação: INSERT';
+      -- só NEW disponível
+      RETURN NEW;
+
+    WHEN 'UPDATE' THEN
+      RAISE NOTICE 'Operação: UPDATE';
+      -- OLD e NEW disponíveis
+      RETURN NEW;
+
+    WHEN 'DELETE' THEN
+      RAISE NOTICE 'Operação: DELETE';
+      -- só OLD disponível
+      RETURN OLD;
+  END CASE;
+
+  RETURN NULL; -- fallback (boa prática)
+END;
+$$ LANGUAGE plpgsql;
+
+
+Quando for inserido um funcionario, sempre deixe o nome em maisculo
+Somente excluir funcionarios que que nao tenham log de alteracao 
+Nao aumentr o salario para mais de 50% do valor
+
+
+
+
+CREATE OR REPLACE FUNCTION public.insert_func_null_salario()
+RETURNS TRIGGER AS $$
+BEGIN
+	RAISE NOTICE 'insert_func_null_salario % %', NEW.salario, NEW.nome;
+	RAISE NOTICE 'insert_func_null_salario % %', old.salario, old.nome;
+	IF (new.salario = 0) THEN
+		RAISE EXCEPTION 'Impossível cadastrar funcionário sem salário';
+	END IF;
+	RETURN new;
+END; $$ LANGUAGE plpgsql; 
+
+
+CREATE OR REPLACE TRIGGER g_exception_null_salario
+BEFORE INSERT OR UPDATE
+ON public.Funcionario
+EXECUTE FUNCTION public.insert_func_null_salario();
+
+UPDATE Funcionario SET salario = 20 WHERE id = 1;
+SELECT * FROM Funcionario;
+
+
+
+
+
+
+
+
+-- Table: public.func_email
+
+-- DROP TABLE IF EXISTS public.func_email;
+
+CREATE TABLE IF NOT EXISTS public.func_email
+(
+    id integer NOT NULL DEFAULT nextval('func_email_id_seq'::regclass),
+    id_func integer NOT NULL,
+    nome_func text COLLATE pg_catalog."default",
+    data_inclusao date,
+    enviado boolean,
+    CONSTRAINT func_email_pkey PRIMARY KEY (id),
+    CONSTRAINT func_email_id_func_fkey FOREIGN KEY (id_func)
+        REFERENCES public.funcionario (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS public.func_email
+    OWNER to postgres;
+
+
