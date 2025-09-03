@@ -100,7 +100,7 @@ BEGIN
 	RAISE EXCEPTION 'Cliente não pode ser deletado pois efetuou pedido';
 	END IF;
 
-	RETURN NULL;
+	RETURN OLD;
 END
 $$ LANGUAGE plpgsql;
 
@@ -110,3 +110,24 @@ ON clientes
 EXECUTE FUNCTION cliente_verificar_delete();
 
 DELETE FROM clientes WHERE id_cliente = 1;
+
+CREATE OR REPLACE FUNCTION att_status_enviado()
+RETURNS TRIGGER AS $$
+BEGIN
+	IF NEW.status_item = 'Enviado' THEN
+		UPDATE pedidos SET status = 'Concluido' WHERE id_pedido = NEW.id_pedido;
+	END IF;
+
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;	
+
+CREATE OR REPLACE TRIGGER att_status_pedido
+AFTER UPDATE OF status_item ON itens_pedido
+FOR EACH ROW
+EXECUTE FUNCTION att_status_enviado();
+
+SELECT * FROM itens_pedido;
+SELECT * FROM pedidos;
+
+UPDATE itens_pedido SET status_item = 'Enviado' WHERE id_item = 4;
