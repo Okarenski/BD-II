@@ -206,3 +206,103 @@ ALTER TABLE IF EXISTS public.func_email
     OWNER to postgres;
 
 
+
+create table produto (
+  id_produto serial primary key,
+  nome text,
+  preco numeric (10,2),
+  estoque int,	
+  tipo_prod int	
+);
+
+insert into produto(nome, preco, estoque, tipo_prod)
+values 
+('sofa', 123.10, 20, 1),
+('cama', 145.16, 25, 2),
+('beliche', 173.18, 10, 1),
+('mesa', 121.10, 20, 2),
+('cadeira', 12.10, 27, 3),
+('estante', 173.90, 23, 1),
+('pia', 23.01, 22, 2);
+
+
+CREATE TABLE IF NOT EXISTS log_auditoria (
+  id_log serial PRIMARY KEY,
+  tabela_afetada text NOT NULL,
+  id_registro_afetado integer,
+  operacao text NOT NULL,
+  detalhes text,
+  data_alteracao timestamptz NOT NULL DEFAULT now()
+);
+
+select * from log_auditoria
+
+CREATE OR REPLACE PROCEDURE ajustar_preco_por_tipo(
+    IN p_tipo_prod integer,
+    IN p_percent numeric
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    rec RECORD;
+    v_preco_novo numeric(10,2);
+BEGIN
+    FOR rec IN
+        SELECT id_produto, nome, preco, estoque
+        FROM produto
+        WHERE tipo_prod = p_tipo_prod
+    LOOP
+        v_preco_novo := ROUND(rec.preco * (1 + p_percent/100.0), 2);
+
+        UPDATE produto
+        SET preco = v_preco_novo
+        WHERE id_produto = rec.id_produto;
+
+        RAISE NOTICE 'Produto: % | Estoque: % | Preco antigo: %.2f -> Novo preco: %.2f | Data: %',
+            rec.nome, rec.estoque, rec.preco, v_preco_novo, now();
+    END LOOP;
+END;
+$$;
+
+
+
+
+
+
+
+
+
+
+
+
+
+SELECT id_produto, nome, tipo_prod, preco FROM produto ORDER BY id_produto;
+
+CALL ajustar_preco_por_tipo(1, -10);
+CALL ajustar_preco_por_tipo(2, 20);
+
+
+CALL ajustar_preco_por_tipo(1, -10);
+
+
+
+
+
+
+CALL ajustar_preco_por_tipo(2, 20);
+
+
+SELECT id_produto, nome, tipo_prod, preco FROM produto ORDER BY id_produto;
+
+SELECT id_log, tabela_afetada, id_registro_afetado, operacao, detalhes, data_alteracao
+FROM log_auditoria
+WHERE tabela_afetada = 'produto'
+ORDER BY data_alteracao DESC;
+
+
+
+
+
+
+
+
