@@ -25,6 +25,10 @@ TG_ARGV [] text [] (array com argumentos passados para o trigger na criação (C
 
 evento = insert, delete, update...
 
+--rollback VOLTA ATUALIZACAO
+--begin ABRE TRANSACAO
+--commit ATUALIZA ELA NO BANCO
+
 -- Com - Rota GRADE Novo - GRADE H
 SELECT FORMAT(DT_VALIDADE_OFERTA, 'dd/MM/yyyy') AS ROTA_VALIDADE,
        INCOTERM.SG_INCOTERM AS ROTA_INCOTERMS_SIGLA,
