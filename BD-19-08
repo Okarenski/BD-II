@@ -299,6 +299,32 @@ FROM log_auditoria
 WHERE tabela_afetada = 'produto'
 ORDER BY data_alteracao DESC;
 
+rollback --VOLTA ATUALIZACAO
+begin --ABRE TRANSACAO
+commit --ATUALIZA ELA NO BANCO
+
+select * from account, funcionario
+select * from funcionario
+
+update funcionario set salario = 5000 where id = 1
+
+alter table funcionario
+add historico varchar(50)
+
+alter table account 
+add historico varchar(50)
+
+update account
+set balance = (select salario from funcionario where id = 1)
+WHERE id = 1
+
+update funcionario set salario = salario - salario where id = 1
+
+
+
+
+
+
 
 
 
